@@ -1,0 +1,194 @@
+tArgs = {...}
+if type(tArgs[1]) ~= "string" then
+  error("Usage : "..shell.getRunningProgram().." [filename]",0)
+end
+curColor = colors.black
+backColor = colors.white
+script = {}
+ 
+colorsL = {
+colors.white,
+colors.orange,
+colors.magenta,
+colors.cyan,
+colors.lightBlue,
+colors.blue,
+colors.lime,
+colors.red,
+colors.pink,
+colors.green,
+colors.purple,
+colors.black,
+colors.gray,
+colors.lightGray,
+colors.yellow,
+colors.brown}
+ 
+function redraw()
+  for i,v in pairs(script) do
+    local exec = loadstring(v)
+    exec()
+  end
+end
+ 
+function fadeText(sText,nFadetime)
+  local x,y = term.getCursorPos()
+  local shades = {
+  colors.white,
+  colors.lightGray,
+  colors.gray,
+  colors.black}
+  term.setBackgroundColor(shades[#shades])
+  for i=1,#shades do
+    term.setCursorPos(x,y)
+    term.setTextColor(shades[i])
+    term.write(sText)
+    os.startTimer(nFadetime/#shades)
+    os.pullEvent("timer")
+  end
+  redraw()
+end
+ 
+function line()
+  local event,button,x,y = os.pullEvent("mouse_click")
+  local eventd,buttond,dragx,dragy = "",0,0,0
+  repeat
+      term.setBackgroundColor(colors.black)
+      term.clear()
+      redraw()
+      local oldx, oldy = dragx, dragy
+    if eventd == "mouse_drag" then
+      paintutils.drawLine(x,y,dragx,dragy,backColor)
+    end
+    eventd,buttond,dragx,dragy = os.pullEvent("mouse_drag")
+    if buttond == 2 then
+      table.insert(script,"paintutils.drawLine("..x..","..y..","..oldx..","..oldy..","..backColor..")")
+    end
+  until buttond == 2
+end
+ 
+function text()
+  local event,button,x,y = os.pullEvent("mouse_click")
+  term.setCursorPos(x,y)
+  local text = {}
+  repeat
+    local event,key = os.pullEvent()
+    if event == "char" then
+      table.insert(text,string.sub(key,1,1))
+      term.setCursorPos(x,y)
+      term.setTextColor(curColor)
+      term.setBackgroundColor(backColor)
+      term.write(table.concat(text))
+    elseif event == "key" then
+      if key == keys.backspace then
+        table.remove(text)
+        paintutils.drawLine(x,y,x+#text,y,backColor)
+        term.setCursorPos(x,y)
+        term.write(table.concat(text))
+      end
+    end
+  until key == keys.enter
+  table.insert(script,"term.setCursorPos("..x..","..y..")")
+  table.insert(script,"term.setTextColor("..curColor..")")
+  table.insert(script,"term.setBackgroundColor("..backColor..")")
+  table.insert(script,"term.write('"..table.concat(text).."')")
+end
+ 
+function nextColor()
+  for i,v in pairs(colorsL) do
+    if v == curColor and i < #colorsL then
+      curColor = colorsL[i+1]
+    elseif v == curColor and i == #colorsL then
+      curColor = colorsL[1]
+    end
+  end
+end
+ 
+function prevColor()
+  for i,v in pairs(colorsL) do
+    if v == curColor and i > 1 then
+      curColor = colorsL[i-1]
+    elseif v == curColor and i == 1 then
+      curColor = colorsL[#colorsL]
+    end
+  end
+end
+ 
+function nextBackColor()
+  for i,v in pairs(colorsL) do
+    if v == backColor and i < #colorsL then
+      backColor = colorsL[i+1]
+    elseif v == backColor and i == #colorsL then
+      backColor = colorsL[#colorsL]
+    end
+  end
+end
+ 
+function prevBackColor()
+  for i,v in pairs(colorsL) do
+    if v == backColor and i > 1 then
+      backColor = colorsL[i-1]
+    elseif v == backColor and i == 1 then
+      backColor = colorsL[#colorsL]
+    end
+  end
+end
+ 
+term.setCursorPos(1,1)
+term.clear()
+term.setTextColor(colors.white)
+print("Key Binds : ")
+print("1 for Line(click for center point, drag for ending point)")
+print("2 for Text(click for starting point")
+print("Arrow keys for color change")
+ 
+repeat
+  local event, key = os.pullEvent("key")
+  if key == keys.left then
+    prevColor()
+    term.setCursorPos(30,1)
+    for i,v in pairs(colors) do
+      if v == curColor then
+        fadeText("TxtClr : "..i,1)
+      end
+    end
+  elseif key == keys.right then
+    nextColor()
+    term.setCursorPos(30,1)
+    for i,v in pairs(colors) do
+      if v == curColor then
+        fadeText("TxtClr : "..i,1)
+      end
+    end
+  elseif key == keys.up then
+    nextBackColor()
+    term.setCursorPos(30,1)
+    for i,v in pairs(colors) do
+      if v == backColor then
+        fadeText("BckClr : "..i,1)
+      end
+    end
+  elseif key == keys.down then
+    prevBackColor()
+    term.setCursorPos(30,1)
+    for i,v in pairs(colors) do
+      if v == backColor then
+        fadeText("BckClr : "..i,1)
+      end
+    end
+  elseif key == keys.one then
+    line()
+  elseif key == keys.two then
+    text()
+  elseif key == keys.backspace then
+    table.remove(script)
+    redraw()
+  end
+until key == keys.tab
+local file = fs.open(tArgs[1],"a")
+file.write("function drawGUI()")
+for i,v in pairs(script) do
+file.write(v)
+end
+file.write("end")
+file.close()
