@@ -1,194 +1,91 @@
-tArgs = {...}
-if type(tArgs[1]) ~= "string" then
-  error("Usage : "..shell.getRunningProgram().." [filename]",0)
+code = {}
+curElement = 1 -- Placeholder
+curColor = colors.red -- Placeholder
+
+function dualPull(...)
+  local e={...}
+  local ev={os.pullEvent()}
+  repeat
+    for k,v in pairs(e) do
+      if v==ev[1] then return unpack(ev) end
+    end
+    ev={os.pullEvent()}
+  until false
 end
-curColor = colors.black
-backColor = colors.white
-script = {}
- 
-colorsL = {
-colors.white,
-colors.orange,
-colors.magenta,
-colors.cyan,
-colors.lightBlue,
-colors.blue,
-colors.lime,
-colors.red,
-colors.pink,
-colors.green,
-colors.purple,
-colors.black,
-colors.gray,
-colors.lightGray,
-colors.yellow,
-colors.brown}
- 
+
 function redraw()
-  for i,v in pairs(script) do
-    local exec = loadstring(v)
-    exec()
-  end
-end
- 
-function fadeText(sText,nFadetime)
-  local x,y = term.getCursorPos()
-  local shades = {
-  colors.white,
-  colors.lightGray,
-  colors.gray,
-  colors.black}
-  term.setBackgroundColor(shades[#shades])
-  for i=1,#shades do
-    term.setCursorPos(x,y)
-    term.setTextColor(shades[i])
-    term.write(sText)
-    os.startTimer(nFadetime/#shades)
-    os.pullEvent("timer")
-  end
-  redraw()
-end
- 
-function line()
-  local event,button,x,y = os.pullEvent("mouse_click")
-  local eventd,buttond,dragx,dragy = "",0,0,0
-  repeat
-      term.setBackgroundColor(colors.black)
-      term.clear()
-      redraw()
-      local oldx, oldy = dragx, dragy
-    if eventd == "mouse_drag" then
-      paintutils.drawLine(x,y,dragx,dragy,backColor)
-    end
-    eventd,buttond,dragx,dragy = os.pullEvent("mouse_drag")
-    if buttond == 2 then
-      table.insert(script,"paintutils.drawLine("..x..","..y..","..oldx..","..oldy..","..backColor..")")
-    end
-  until buttond == 2
-end
- 
-function text()
-  local event,button,x,y = os.pullEvent("mouse_click")
-  term.setCursorPos(x,y)
-  local text = {}
-  repeat
-    local event,key = os.pullEvent()
-    if event == "char" then
-      table.insert(text,string.sub(key,1,1))
-      term.setCursorPos(x,y)
-      term.setTextColor(curColor)
-      term.setBackgroundColor(backColor)
-      term.write(table.concat(text))
-    elseif event == "key" then
-      if key == keys.backspace then
-        table.remove(text)
-        paintutils.drawLine(x,y,x+#text,y,backColor)
-        term.setCursorPos(x,y)
-        term.write(table.concat(text))
+  term.setBackgroundColor(colors.black)
+  term.clear()
+  for i,v in pairs(code) do
+  	if curElement ~= i then
+      if v.class == "pixel" then
+        paintutils.drawPixel(v.x,v.y,v.color)
+      elseif v.class == "line" then
+        paintutils.drawLine(v.sX,v.sY,v.eX,v.eY,v.color)
+      elseif v.class == "text" then
+        term.setCursorPos(v.x,v.y)
+        term.setTextColor(v.tColor)
+        term.setBackgroundColor(v.bColor)
+        term.write(v.text)
+       elseif v.class == "fill" then
+       	term.setBackgroundColor(v.color)
+       	term.clear()
+       end
+    else
+      if v.class == "pixel" then
+        paintutils.drawPixel(v.x,v.y,v.color ~= colors.blue and colors.blue or colors.lightBlue)
+      elseif v.class == "line" then
+        paintutils.drawLine(v.sX,v.sY,v.eX,v.eY,v.color ~= colors.blue and colors.blue or colors.lightBlue)
+      elseif v.class == "text" then
+        term.setCursorPos(v.x,v.y)
+        term.setTextColor(v.tColor ~= colors.blue and colors.blue or colors.lightBlue)
+        term.setBackgroundColor(v.bColor ~= colors.blue and colors.blue or colors.lightBlue)
+        term.write(v.text)
+      elseif v.class == "fill" then
+       	term.setBackgroundColor(v.color ~= colors.blue and colors.blue or colors.lightBlue)
+       	term.clear()
       end
     end
-  until key == keys.enter
-  table.insert(script,"term.setCursorPos("..x..","..y..")")
-  table.insert(script,"term.setTextColor("..curColor..")")
-  table.insert(script,"term.setBackgroundColor("..backColor..")")
-  table.insert(script,"term.write('"..table.concat(text).."')")
-end
- 
-function nextColor()
-  for i,v in pairs(colorsL) do
-    if v == curColor and i < #colorsL then
-      curColor = colorsL[i+1]
-    elseif v == curColor and i == #colorsL then
-      curColor = colorsL[1]
-    end
   end
 end
- 
-function prevColor()
-  for i,v in pairs(colorsL) do
-    if v == curColor and i > 1 then
-      curColor = colorsL[i-1]
-    elseif v == curColor and i == 1 then
-      curColor = colorsL[#colorsL]
-    end
+
+function line(toX,toY,fromX,fromY)
+  if not toX and not toY and not fromX and not fromY then
+    event, button, fromX, fromY = os.pullEvent("mouse_click")
+    event, button, toX, toY = os.pullEvent("mouse_click")
   end
-end
- 
-function nextBackColor()
-  for i,v in pairs(colorsL) do
-    if v == backColor and i < #colorsL then
-      backColor = colorsL[i+1]
-    elseif v == backColor and i == #colorsL then
-      backColor = colorsL[#colorsL]
-    end
-  end
-end
- 
-function prevBackColor()
-  for i,v in pairs(colorsL) do
-    if v == backColor and i > 1 then
-      backColor = colorsL[i-1]
-    elseif v == backColor and i == 1 then
-      backColor = colorsL[#colorsL]
-    end
-  end
-end
- 
-term.setCursorPos(1,1)
-term.clear()
-term.setTextColor(colors.white)
-print("Key Binds : ")
-print("1 for Line(click for center point, drag for ending point)")
-print("2 for Text(click for starting point")
-print("Arrow keys for color change")
- 
-repeat
-  local event, key = os.pullEvent("key")
-  if key == keys.left then
-    prevColor()
-    term.setCursorPos(30,1)
-    for i,v in pairs(colors) do
-      if v == curColor then
-        fadeText("TxtClr : "..i,1)
+  local curPoint = "to"
+  while true do
+  	redraw()
+  	paintutils.drawLine(fromX,fromY,toX,toY,curColor)
+  	paintutils.drawPixel(curPoint == "to" and toX or fromX,curPoint == "to" and toY or fromY,curColor ~= colors.red and colors.red or colors.blue)
+    local event, button, x, y = dualPull("mouse_click","mouse_drag")
+    if event == "mouse_drag" then
+      toX = curPoint == "to" and x or toX
+      toY = curPoint == "to" and y or toY
+      fromX = curPoint == "from" and x or fromX
+      fromY = curPoint == "from" and y or fromY
+      paintutils.drawLine(fromX,fromY,toX,toY,curColor)
+    elseif event == "mouse_click" then
+      if x == fromX and y == fromY and curPoint ~= "from" then
+        curPoint = "from"
+        paintutils.drawPixel(curPoint == "to" and toX or fromX,curPoint == "to" and toY or fromY,curColor ~= colors.red and colors.red or colors.blue)
+      elseif x == toX and y == toY and curPoint ~= "to" then
+      	curPoint = "to"
+      	paintutils.drawPixel(curPoint == "to" and toX or fromX,curPoint == "to" and toY or fromY,curColor ~= colors.red and colors.red or colors.blue)
+      elseif x == toX and y == toY and curPoint == "to" then
+      	break
+      elseif x == fromX and y == fromY and curPont == "from" then
+      	break
       end
     end
-  elseif key == keys.right then
-    nextColor()
-    term.setCursorPos(30,1)
-    for i,v in pairs(colors) do
-      if v == curColor then
-        fadeText("TxtClr : "..i,1)
-      end
-    end
-  elseif key == keys.up then
-    nextBackColor()
-    term.setCursorPos(30,1)
-    for i,v in pairs(colors) do
-      if v == backColor then
-        fadeText("BckClr : "..i,1)
-      end
-    end
-  elseif key == keys.down then
-    prevBackColor()
-    term.setCursorPos(30,1)
-    for i,v in pairs(colors) do
-      if v == backColor then
-        fadeText("BckClr : "..i,1)
-      end
-    end
-  elseif key == keys.one then
-    line()
-  elseif key == keys.two then
-    text()
-  elseif key == keys.backspace then
-    table.remove(script)
-    redraw()
   end
-until key == keys.tab
-local file = fs.open(tArgs[1],"a")
-file.write("function drawGUI()")
-for i,v in pairs(script) do
-file.write(v)
+  local template = {
+    class = "line",
+    sX = fromX,
+    sY = fromY,
+    eX = toX,
+    eY = toY,
+    color = curColor}
+  table.insert(code,template)
 end
-file.write("end")
-file.close()
