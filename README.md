@@ -1,6 +1,8 @@
 GUIDE
 =====
 
+SKYPE/CURSE VOICE CALLS WILL BE THE BEST METHOD OF COLLABORATING!
+
 Please follow this manual.
 I have a list of things that need to be done.
 If you are going to make something from this list, create the file and place your name at the top as a comment(--)
