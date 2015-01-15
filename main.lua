@@ -1,6 +1,6 @@
 code = {}
-curElement = 1 -- Placeholder
-curColor = colors.red -- Placeholder
+curElement = 1
+curColor = colors.red
 
 function dualPull(...)
   local e={...}
@@ -88,4 +88,52 @@ function line(toX,toY,fromX,fromY)
     eY = toY,
     color = curColor}
   table.insert(code,template)
+end
+
+function text(x,y,sText)
+  local tColor = colors.blue
+  local bColor = colors.green
+  local tText = {}
+  if sText then
+    for i=1,#sText do
+      local letter = string.sub(sText,i,i)
+      table.insert(tText,letter)
+    end
+  end
+  local selected = #tText
+  if not x and not y then
+    local event, button, x, y = os.pullEvent("mouse_click")
+  end
+  repeat
+  	redraw()
+  	term.setCursorPos(x,y)
+  	term.setTextColor(tColor)
+  	term.setBackgroundColor(bColor)
+  	term.write(table.concat(tText))
+    local event, key = dualPull("key","char")
+    if event == "char" then
+      table.insert(tText,selected + 1,key)
+      selected = selected + 1
+    elseif event == "key" then
+      if key == keys.left and selected > 0 then
+      	selected = selected - 1
+      elseif key == keys.right and selected < #tText then
+      	selected = selected + 1
+      elseif key == keys.backspace and selected > 0 then
+      	local oldSel = selected
+      	selected = selected - 1
+      	table.remove(tText,oldSel)
+      end
+    end
+  until key == keys.enter
+  if #tText > 0 then
+    local template = {
+      class = "text",
+      text = table.concat(tText),
+      x = x,
+      y = y,
+      tColor = tColor,
+      bColor = bColor}
+    table.insert(code,template)
+  end
 end
