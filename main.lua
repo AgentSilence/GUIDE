@@ -2,11 +2,17 @@ code = {}
 curElement = 1
 curColor = colors.red
 
+function drawBox(x,y,endX,endY,color)
+  for i=y > endY and y or endY,y > endY and endY or y do
+    paintutils.drawLine(x,i,endX,i,color)
+  end
+end
+
 function dualPull(...)
   local e={...}
   local ev={os.pullEvent()}
   repeat
-    for k,v in pairs(e) do
+    for i,v in pairs(e) do
       if v==ev[1] then return unpack(ev) end
     end
     ev={os.pullEvent()}
@@ -18,19 +24,21 @@ function redraw()
   term.clear()
   for i,v in pairs(code) do
   	if curElement ~= i then
-      if v.class == "pixel" then
+      if v.class == "pixel" and v.visible == true then
         paintutils.drawPixel(v.x,v.y,v.color)
-      elseif v.class == "line" then
+      elseif v.class == "line" and v.visible == true then
         paintutils.drawLine(v.sX,v.sY,v.eX,v.eY,v.color)
-      elseif v.class == "text" then
+      elseif v.class == "text" and v.visible == true then
         term.setCursorPos(v.x,v.y)
         term.setTextColor(v.tColor)
         term.setBackgroundColor(v.bColor)
         term.write(v.text)
-       elseif v.class == "fill" then
+      elseif v.class == "fill" and v.visible == true then
        	term.setBackgroundColor(v.color)
        	term.clear()
-       end
+      elseif v.class == "rectangle" and v.visible == true then
+       	drawBox(v.x,v.y,v.endX,v.endY,v.color)
+      end
     else
       if v.class == "pixel" then
         paintutils.drawPixel(v.x,v.y,v.color ~= colors.blue and colors.blue or colors.lightBlue)
@@ -44,6 +52,8 @@ function redraw()
       elseif v.class == "fill" then
        	term.setBackgroundColor(v.color ~= colors.blue and colors.blue or colors.lightBlue)
        	term.clear()
+      elseif v.class == "rectangle" then
+      	drawBox(v.x,v.y,v.endX,v.endY,v.color ~= colors.blue and colors.blue or colors.lightBlue)
       end
     end
   end
@@ -69,10 +79,10 @@ function line(toX,toY,fromX,fromY)
     elseif event == "mouse_click" then
       if x == fromX and y == fromY and curPoint ~= "from" then
         curPoint = "from"
-        paintutils.drawPixel(curPoint == "to" and toX or fromX,curPoint == "to" and toY or fromY,curColor ~= colors.red and colors.red or colors.blue)
+        paintutils.drawPixel(curPoint == "to" and toX or fromX,curPoint == "to" and toY or fromY,curColor ~= colors.lightBlue and colors.lightBlue or colors.blue)
       elseif x == toX and y == toY and curPoint ~= "to" then
       	curPoint = "to"
-      	paintutils.drawPixel(curPoint == "to" and toX or fromX,curPoint == "to" and toY or fromY,curColor ~= colors.red and colors.red or colors.blue)
+      	paintutils.drawPixel(curPoint == "to" and toX or fromX,curPoint == "to" and toY or fromY,curColor ~= colors.lightBlue and colors.lightBlue or colors.blue)
       elseif x == toX and y == toY and curPoint == "to" then
       	break
       elseif x == fromX and y == fromY and curPont == "from" then
@@ -135,5 +145,19 @@ function text(x,y,sText)
       tColor = tColor,
       bColor = bColor}
     table.insert(code,template)
+  end
+end
+
+function rectangle(x,y,endX,endY,color)
+  if not x and not y and not endX and not endY then
+    local event, button, X, Y = os.pullEvent("mouse_click")
+    x = X
+    y = Y
+    local event, button, X, Y = os.pullEvent("mouse_click")
+    endX = X
+    endY = Y
+  end
+  if not color then
+  	color = colors.red
   end
 end
