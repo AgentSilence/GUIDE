@@ -9,13 +9,14 @@ function drawBox(x,y,endX,endY,color)
 end
 
 function dualPull(...)
-  local e={...}
-  local ev={os.pullEvent()}
+  local args={...}
   repeat
-    for i,v in pairs(e) do
-      if v==ev[1] then return unpack(ev) end
+    local evnt = {os.pullEvent()}
+    for i,v in pairs(args) do
+      if evnt[1] == v then
+      	return unpack(evnt)
+      end
     end
-    ev={os.pullEvent()}
   until false
 end
 
@@ -53,13 +54,13 @@ function redraw()
        	term.setBackgroundColor(v.color ~= colors.blue and colors.blue or colors.lightBlue)
        	term.clear()
       elseif v.class == "rectangle" then
-      	drawBox(v.x,v.y,v.endX,v.endY,v.color ~= colors.blue and colors.blue or colors.lightBlue)
+      	drawBox(v.sX,v.sY,v.eX,v.eY,v.color ~= colors.blue and colors.blue or colors.lightBlue)
       end
     end
   end
 end
 
-function line(toX,toY,fromX,fromY,color)
+function line(toX,toY,fromX,fromY,color,key)
   if not toX and not toY and not fromX and not fromY then
     event, button, fromX, fromY = os.pullEvent("mouse_click")
     event, button, toX, toY = os.pullEvent("mouse_click")
@@ -98,10 +99,15 @@ function line(toX,toY,fromX,fromY,color)
     eX = toX,
     eY = toY,
     color = curColor}
-  table.insert(code,template)
+  if key then
+  	table.remove(code,key)
+    table.insert(code,key,template)
+  else
+  	table.insert(code,template)
+  end
 end
 
-function text(x,y,sText,bColor,tColor)
+function text(x,y,sText,bColor,tColor,key)
   if not bColor and not tColor then
     tColor = colors.black
     bColor = colors.red
@@ -147,12 +153,17 @@ function text(x,y,sText,bColor,tColor)
       y = y,
       tColor = tColor,
       bColor = bColor}
-    table.insert(code,template)
+    if key then
+  	  table.remove(code,key)
+      table.insert(code,key,template)
+    else
+  	  table.insert(code,template)
+    end
   end
 end
 
-function rectangle(fromX,fromY,toX,toY,color)
-  if not x and not y and not endX and not endY then
+function rectangle(fromX,fromY,toX,toY,color,key)
+  if not fromX and not fromY and not toX and not toY then
     local event, button, x, y = os.pullEvent("mouse_click")
     fromX = x
     fromY = y
@@ -189,4 +200,31 @@ function rectangle(fromX,fromY,toX,toY,color)
       end
     end
   end
+  local template = {
+    class = "rectangle",
+    sX = fromX,
+    sY = fromY,
+    eX = toX,
+    eY = toY,
+    color = color}
+  if key then
+  	table.remove(code,key)
+    table.insert(code,key,template)
+  else
+  	table.insert(code,template)
+  end
+end
+
+function edit(key)
+  local item = code[key]
+  if item.class == "line" then
+  	line(item.sX,item.sY,item.eX,item.eY,item.color,key)
+  elseif code[key].class == "text" then
+  	text(item.x,item.y,item.text,item.tColor,item.bColor,key)
+  elseif code[key].class == "pixel" then
+  	
+  elseif code[key].class == "rectangle" then
+  	rectangle(item.sX,item.sY,item.eX,item.eY,item.color,key)
+  end
+  code[key] = item
 end
