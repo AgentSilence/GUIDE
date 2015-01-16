@@ -14,4 +14,6 @@ Element Browser: A list of all the elements. Can edit properties of an element.
 
 Pixel function: Multiple pixels need to be in a single class.
 
-Box function: Draggable.(WORKING ON IT - AGENT)
+Edit function: for Element Browser
+
+Box function: Draggable.(DONE - AGENT)
