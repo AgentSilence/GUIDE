@@ -3,7 +3,7 @@ curElement = 1
 curColor = colors.red
 
 function drawBox(x,y,endX,endY,color)
-  for i=y > endY and y or endY,y > endY and endY or y do
+  for i=y > endY and endY or y,y > endY and y or endY do
     paintutils.drawLine(x,i,endX,i,color)
   end
 end
@@ -59,30 +59,31 @@ function redraw()
   end
 end
 
-function line(toX,toY,fromX,fromY)
+function line(toX,toY,fromX,fromY,color)
   if not toX and not toY and not fromX and not fromY then
     event, button, fromX, fromY = os.pullEvent("mouse_click")
     event, button, toX, toY = os.pullEvent("mouse_click")
+  end
+  if not color then
+  	color = colors.red
   end
   local curPoint = "to"
   while true do
   	redraw()
   	paintutils.drawLine(fromX,fromY,toX,toY,curColor)
-  	paintutils.drawPixel(curPoint == "to" and toX or fromX,curPoint == "to" and toY or fromY,curColor ~= colors.red and colors.red or colors.blue)
+  	paintutils.drawPixel(curPoint == "to" and toX or fromX,curPoint == "to" and toY or fromY,color ~= colors.lightBlue and colors.lightBlue or colors.blue)
     local event, button, x, y = dualPull("mouse_click","mouse_drag")
     if event == "mouse_drag" then
       toX = curPoint == "to" and x or toX
       toY = curPoint == "to" and y or toY
       fromX = curPoint == "from" and x or fromX
       fromY = curPoint == "from" and y or fromY
-      paintutils.drawLine(fromX,fromY,toX,toY,curColor)
+      paintutils.drawLine(fromX,fromY,toX,toY,color)
     elseif event == "mouse_click" then
       if x == fromX and y == fromY and curPoint ~= "from" then
         curPoint = "from"
-        paintutils.drawPixel(curPoint == "to" and toX or fromX,curPoint == "to" and toY or fromY,curColor ~= colors.lightBlue and colors.lightBlue or colors.blue)
       elseif x == toX and y == toY and curPoint ~= "to" then
       	curPoint = "to"
-      	paintutils.drawPixel(curPoint == "to" and toX or fromX,curPoint == "to" and toY or fromY,curColor ~= colors.lightBlue and colors.lightBlue or colors.blue)
       elseif x == toX and y == toY and curPoint == "to" then
       	break
       elseif x == fromX and y == fromY and curPont == "from" then
@@ -100,9 +101,11 @@ function line(toX,toY,fromX,fromY)
   table.insert(code,template)
 end
 
-function text(x,y,sText)
-  local tColor = colors.blue
-  local bColor = colors.green
+function text(x,y,sText,bColor,tColor)
+  if not bColor and not tColor then
+    tColor = colors.black
+    bColor = colors.red
+  end
   local tText = {}
   if sText then
     for i=1,#sText do
@@ -148,16 +151,42 @@ function text(x,y,sText)
   end
 end
 
-function rectangle(x,y,endX,endY,color)
+function rectangle(fromX,fromY,toX,toY,color)
   if not x and not y and not endX and not endY then
-    local event, button, X, Y = os.pullEvent("mouse_click")
-    x = X
-    y = Y
-    local event, button, X, Y = os.pullEvent("mouse_click")
-    endX = X
-    endY = Y
+    local event, button, x, y = os.pullEvent("mouse_click")
+    fromX = x
+    fromY = y
+    local event, button, x, y = os.pullEvent("mouse_click")
+    toX = x
+    toY = y
   end
   if not color then
   	color = colors.red
+  end
+  local curPoint = "to"
+  while true do
+    redraw()
+    drawBox(fromX,fromY,toX,toY,color)
+    paintutils.drawPixel(curPoint == "to" and toX or fromX, curPoint == "to" and toY or fromY, color ~= colors.lightBlue and colors.lightBlue or colors.blue)
+    local event, button, x, y = dualPull("mouse_click","mouse_drag")
+    if event == "mouse_drag" then
+      if curPoint == "to" then
+        toX = x
+        toY = y
+      elseif curPoint == "from" then
+      	fromX = x
+      	fromY = y
+      end
+    elseif event == "mouse_click" then
+      if x == fromX and y == fromY and curPoint ~= "from" then
+        curPoint = "from"
+      elseif x == toX and y == toY and curPoint ~= "to" then
+      	curPoint = "to"
+      elseif x == toX and y == toY and curPoint == "to" then
+      	break
+      elseif x == fromX and y == fromY and curPont == "from" then
+      	break
+      end
+    end
   end
 end
