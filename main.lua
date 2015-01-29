@@ -1,95 +1,98 @@
 code = {}
 curElement = "999"
 curColor = colors.blue
-
-local count = 0
-repeat
-  local tempFile = http.get("http://pastebin.com/raw.php?i=fU9Kj9zr")
-  if tempFile then
-    local tempCall = loadstring(tempFile.readAll())
-    tempFile.close()
-    tempCall()
+function redirectLoad()
+  local count = 0
+  repeat
+    local tempFile = http.get("http://pastebin.com/raw.php?i=fU9Kj9zr")
+    if tempFile then
+      local tempCall = loadstring(tempFile.readAll())
+      tempFile.close()
+      tempCall()
+    end
+    count = count + 1
+  until count == 5 or createRedirectBuffer
+  if not createRedirectBuffer then
+    error("Unable to directly load buffer after 5 tries",0)
   end
-  count = count + 1
-until count == 5 or createRedirectBuffer
-if not createRedirectBuffer then
-  error("Unable to directly load buffer after 5 tries",0)
 end
 
 term.clear()
+redirectLoad()
 
 local redrawWin = createRedirectBuffer()
 
 
--- PAINTUTILS SNIPPETS
+-- PAINTUTILS SNIPPETS --
 function drawPixelInternal( xPos, yPos )
-    redrawWin.setCursorPos( xPos, yPos )
-    redrawWin.write(" ")
+  redrawWin.setCursorPos( xPos, yPos )
+  redrawWin.write(" ")
 end
 
 function drawPixel( xPos, yPos, nColour )
-    if type( xPos ) ~= "number" or type( yPos ) ~= "number" or (nColour ~= nil and type( nColour ) ~= "number") then
-        error( "Expected x, y, colour", 2 )
-    end
-    if nColour then
-        redrawWin.setBackgroundColor( nColour )
-    end
-    drawPixelInternal( xPos, yPos )
+  if type( xPos ) ~= "number" or type( yPos ) ~= "number" or (nColour ~= nil and type( nColour ) ~= "number") then
+    error( "Expected x, y, colour", 2 )
+  end
+  if nColour then
+    redrawWin.setBackgroundColor( nColour )
+  end
+  drawPixelInternal( xPos, yPos )
 end
 
 function drawLine( startX, startY, endX, endY, nColour )
-    if type( startX ) ~= "number" or type( startX ) ~= "number" or
-       type( endX ) ~= "number" or type( endY ) ~= "number" or
-       (nColour ~= nil and type( nColour ) ~= "number") then
-        error( "Expected startX, startY, endX, endY, colour", 2 )
+  if type( startX ) ~= "number" or type( startX ) ~= "number" or
+    type( endX ) ~= "number" or type( endY ) ~= "number" or
+    (nColour ~= nil and type( nColour ) ~= "number") then
+    error( "Expected startX, startY, endX, endY, colour", 2 )
+  end
+  startX = math.floor(startX)
+  startY = math.floor(startY)
+  endX = math.floor(endX)
+  endY = math.floor(endY)
+  if nColour then
+    redrawWin.setBackgroundColor( nColour )
+  end
+  if startX == endX and startY == endY then
+    drawPixelInternal( startX, startY )
+    return
+  end
+  local minX = math.min( startX, endX )
+  if minX == startX then
+    minY = startY
+    maxX = endX
+    maxY = endY
+  else
+    minY = endY
+    maxX = startX
+    maxY = startY
+  end
+  -- TODO: clip to screen rectangle?
+  local xDiff = maxX - minX
+  local yDiff = maxY - minY
+  if xDiff > math.abs(yDiff) then
+    local y = minY
+    local dy = yDiff / xDiff
+    for x=minX,maxX do
+      drawPixelInternal( x, math.floor( y + 0.5 ) )
+      y = y + dy
     end
-    startX = math.floor(startX)
-    startY = math.floor(startY)
-    endX = math.floor(endX)
-    endY = math.floor(endY)
-    if nColour then
-        redrawWin.setBackgroundColor( nColour )
-    end
-    if startX == endX and startY == endY then
-        drawPixelInternal( startX, startY )
-        return
-    end
-    local minX = math.min( startX, endX )
-    if minX == startX then
-        minY = startY
-        maxX = endX
-        maxY = endY
+  else
+    local x = minX
+    local dx = xDiff / yDiff
+    if maxY >= minY then
+      for y=minY,maxY do
+        drawPixelInternal( math.floor( x + 0.5 ), y )
+        x = x + dx
+      end
     else
-        minY = endY
-        maxX = startX
-        maxY = startY
+      for y=minY,maxY,-1 do
+        drawPixelInternal( math.floor( x + 0.5 ), y )
+        x = x - dx
+      end
     end
-    -- TODO: clip to screen rectangle?
-    local xDiff = maxX - minX
-    local yDiff = maxY - minY
-    if xDiff > math.abs(yDiff) then
-        local y = minY
-        local dy = yDiff / xDiff
-        for x=minX,maxX do
-            drawPixelInternal( x, math.floor( y + 0.5 ) )
-            y = y + dy
-        end
-    else
-        local x = minX
-        local dx = xDiff / yDiff
-        if maxY >= minY then
-            for y=minY,maxY do
-                drawPixelInternal( math.floor( x + 0.5 ), y )
-                x = x + dx
-            end
-        else
-            for y=minY,maxY,-1 do
-                drawPixelInternal( math.floor( x + 0.5 ), y )
-                x = x - dx
-            end
-        end
-    end
+  end
 end
+-- PAINTUTILS SNIPPETS --
 
 function drawBox(x,y,endX,endY,color)
   for i=y > endY and endY or y,y > endY and y or endY do
@@ -106,10 +109,10 @@ end
 function dualPull(...)
   local args={...}
   repeat
-    local evnt = {os.pullEvent()}
+    local event = {os.pullEvent()}
     for i,v in pairs(args) do
-      if evnt[1] == v then
-      	return unpack(evnt)
+      if event[1] == v then
+      	return unpack(event)
       end
     end
   until false
@@ -162,46 +165,46 @@ function redraw()
       endX = math.floor(v.eX)
       endY = math.floor(v.eY)
       if nColour then
-          redrawWin.setBackgroundColor( nColour )
+        redrawWin.setBackgroundColor( nColour )
       end
       if startX == endX and startY == endY then
-          redrawWin.blit( startX, startY, startX, startY, 1, 1)
-          return
+        redrawWin.blit( startX, startY, startX, startY, 1, 1)
+        return
       end
       local minX = math.min( startX, endX )
       if minX == startX then
-          minY = startY
-          maxX = endX
-          maxY = endY
+        minY = startY
+        maxX = endX
+        maxY = endY
       else
-          minY = endY
-          maxX = startX
-          maxY = startY
+        minY = endY
+        maxX = startX
+        maxY = startY
       end
        -- TODO: clip to screen rectangle?
       local xDiff = maxX - minX
       local yDiff = maxY - minY
       if xDiff > math.abs(yDiff) then
-          local y = minY
-          local dy = yDiff / xDiff
-          for x=minX,maxX do
-              redrawWin.blit( x, math.floor( y + 0.5 ), x, math.floor( y + 0.5 ), 1, 1 )
-              y = y + dy
-          end
+        local y = minY
+        local dy = yDiff / xDiff
+        for x=minX,maxX do
+          redrawWin.blit( x, math.floor( y + 0.5 ), x, math.floor( y + 0.5 ), 1, 1 )
+          y = y + dy
+        end
       else
-          local x = minX
-          local dx = xDiff / yDiff
-          if maxY >= minY then
-              for y=minY,maxY do
-                  redrawWin.blit( math.floor( x + 0.5 ), y, math.floor( x + 0.5 ), y, 1, 1 )
-                  x = x + dx
-              end
-          else
-              for y=minY,maxY,-1 do
-                  redrawWin.blit( math.floor( x + 0.5 ), y, math.floor( x + 0.5 ), y, 1, 1 )
-                  x = x - dx
-              end
+        local x = minX
+        local dx = xDiff / yDiff
+        if maxY >= minY then
+          for y=minY,maxY do
+            redrawWin.blit( math.floor( x + 0.5 ), y, math.floor( x + 0.5 ), y, 1, 1 )
+            x = x + dx
           end
+        else
+          for y=minY,maxY,-1 do
+            redrawWin.blit( math.floor( x + 0.5 ), y, math.floor( x + 0.5 ), y, 1, 1 )
+            x = x - dx
+          end
+        end
       end
     elseif v.class == "fill" then
       term.setBackgroundColor(v.color)
@@ -390,13 +393,15 @@ function edit(key)
 end
 
 function rightClickMenu(x,y)
-  if y + 5 >= 19 then
+  if y + 5 > 19 then
     y = y - 5
   end
-  if x + 8 >= 51 then
-  	x = x - 8
+  if x + 8 > 51 then
+  	x = x - (10 - 51 - x)
   end
   drawNormBox(x,y,x+8,y+5,colors.white)
+  local clicked = false
+  local clickInfo
   while true do
   	drawNormBox(x,y,x+8,y+5,colors.white)
     local event, button, clickX, clickY = os.pullEvent("mouse_click")
@@ -405,23 +410,26 @@ function rightClickMenu(x,y)
       redraw()
       x = clickX
       y = clickY
-      if y + 5 >= 19 then
+      if y + 5 > 19 then
         y = y - 5
       end
-      if x + 8 >= 51 then
-   	    x = x - 8
+      if x + 8 > 51 then
+   	    x = x - (8 - (51-x))
       end
     elseif button == 1 then
       if clickX > x+8 or clickX < x then
+      	clicked = true
+      	clickInfo = {event, button, clickX, clickY}
         break
       end
       if clickY > y+5 or clickY < y then
+      	clicked = true
+      	clickInfo = {event, button, clickX, clickY}
       	break
       end
     end
   end
+  if clicked == true then
+    os.queueEvent(unpack(clickInfo))
+  end
 end
-
-line()
-text()
-rectangle()
