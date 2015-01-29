@@ -5,9 +5,11 @@ curColor = colors.blue
 local count = 0
 repeat
   local tempFile = http.get("http://pastebin.com/raw.php?i=fU9Kj9zr")
-  local tempCall = loadstring(tempFile.readAll())
-  tempFile.close()
-  tempCall()
+  if tempFile then
+    local tempCall = loadstring(tempFile.readAll())
+    tempFile.close()
+    tempCall()
+  end
   count = count + 1
 until count == 5 or createRedirectBuffer
 if not createRedirectBuffer then
@@ -20,7 +22,7 @@ local redrawWin = createRedirectBuffer()
 
 
 -- PAINTUTILS SNIPPETS
-local function drawPixelInternal( xPos, yPos )
+function drawPixelInternal( xPos, yPos )
     redrawWin.setCursorPos( xPos, yPos )
     redrawWin.write(" ")
 end
@@ -35,7 +37,7 @@ function drawPixel( xPos, yPos, nColour )
     drawPixelInternal( xPos, yPos )
 end
 
-local function drawLine( startX, startY, endX, endY, nColour )
+function drawLine( startX, startY, endX, endY, nColour )
     if type( startX ) ~= "number" or type( startX ) ~= "number" or
        type( endX ) ~= "number" or type( endY ) ~= "number" or
        (nColour ~= nil and type( nColour ) ~= "number") then
@@ -88,7 +90,6 @@ local function drawLine( startX, startY, endX, endY, nColour )
         end
     end
 end
-
 
 function drawBox(x,y,endX,endY,color)
   for i=y > endY and endY or y,y > endY and y or endY do
@@ -394,6 +395,30 @@ function rightClickMenu(x,y)
   end
   if x + 8 >= 51 then
   	x = x - 8
+  end
+  drawNormBox(x,y,x+8,y+5,colors.white)
+  while true do
+  	drawNormBox(x,y,x+8,y+5,colors.white)
+    local event, button, clickX, clickY = os.pullEvent("mouse_click")
+    if button == 2 then
+      drawNormBox(x,y,x+8,y+5,colors.black)
+      redraw()
+      x = clickX
+      y = clickY
+      if y + 5 >= 19 then
+        y = y - 5
+      end
+      if x + 8 >= 51 then
+   	    x = x - 8
+      end
+    elseif button == 1 then
+      if clickX > x+8 or clickX < x then
+        break
+      end
+      if clickY > y+5 or clickY < y then
+      	break
+      end
+    end
   end
 end
 
