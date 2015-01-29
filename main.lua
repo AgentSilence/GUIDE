@@ -1,5 +1,5 @@
 code = {}
-curElement = "999"
+curElement = 999
 curColor = colors.blue
 function redirectLoad()
   local count = 0
@@ -136,7 +136,7 @@ function redraw()
       elseif v.class == "rectangle" and v.visible == true then
        	drawBox(v.x,v.y,v.endX,v.endY,v.color)
       end
-    elseif curElement == i then
+    elseif i == curElement then
       if v.class == "pixel" then
         drawPixel(v.x,v.y,v.color ~= colors.blue and colors.blue or colors.lightBlue)
       elseif v.class == "line" then
@@ -382,17 +382,17 @@ function edit(key)
   local item = code[key]
   if item.class == "line" then
   	line(item.sX,item.sY,item.eX,item.eY,item.color,key)
-  elseif code[key].class == "text" then
+  elseif item.class == "text" then
   	text(item.x,item.y,item.text,item.tColor,item.bColor,key)
-  elseif code[key].class == "pixel" then
+  elseif item.class == "pixel" then
   	
-  elseif code[key].class == "rectangle" then
+  elseif item.class == "rectangle" then
   	rectangle(item.sX,item.sY,item.eX,item.eY,item.color,key)
   end
-  code[key] = item
 end
 
 function rightClickMenu(x,y)
+  redraw()
   if y + 5 > 19 then
     y = y - 5
   end
