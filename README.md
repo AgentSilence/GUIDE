@@ -17,3 +17,11 @@ Pixel function: Multiple pixels need to be in a single class.
 Edit function: for Element Browser(DONE - AGENT)
 
 Box function: Draggable.(DONE - AGENT)
+
+Right Click Menu: Functions like Google Chrome's.(Just need to add options - AGENT)
+
+Code Saving: Saves project to a file.(Will do myself - AGENT)
+
+
+
+
