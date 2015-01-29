@@ -1,8 +1,102 @@
 code = {}
-curElement = 1
-curColor = colors.red
+curElement = "999"
+curColor = colors.blue
+
+local count = 0
+repeat
+  local tempFile = http.get("http://pastebin.com/raw.php?i=fU9Kj9zr")
+  local tempCall = loadstring(tempFile.readAll())
+  tempFile.close()
+  tempCall()
+  count = count + 1
+until count == 5 or createRedirectBuffer
+if not createRedirectBuffer then
+  error("Unable to directly load buffer after 5 tries",0)
+end
+
+term.clear()
+
+local redrawWin = createRedirectBuffer()
+
+
+-- PAINTUTILS SNIPPETS
+local function drawPixelInternal( xPos, yPos )
+    redrawWin.setCursorPos( xPos, yPos )
+    redrawWin.write(" ")
+end
+
+function drawPixel( xPos, yPos, nColour )
+    if type( xPos ) ~= "number" or type( yPos ) ~= "number" or (nColour ~= nil and type( nColour ) ~= "number") then
+        error( "Expected x, y, colour", 2 )
+    end
+    if nColour then
+        redrawWin.setBackgroundColor( nColour )
+    end
+    drawPixelInternal( xPos, yPos )
+end
+
+local function drawLine( startX, startY, endX, endY, nColour )
+    if type( startX ) ~= "number" or type( startX ) ~= "number" or
+       type( endX ) ~= "number" or type( endY ) ~= "number" or
+       (nColour ~= nil and type( nColour ) ~= "number") then
+        error( "Expected startX, startY, endX, endY, colour", 2 )
+    end
+    startX = math.floor(startX)
+    startY = math.floor(startY)
+    endX = math.floor(endX)
+    endY = math.floor(endY)
+    if nColour then
+        redrawWin.setBackgroundColor( nColour )
+    end
+    if startX == endX and startY == endY then
+        drawPixelInternal( startX, startY )
+        return
+    end
+    local minX = math.min( startX, endX )
+    if minX == startX then
+        minY = startY
+        maxX = endX
+        maxY = endY
+    else
+        minY = endY
+        maxX = startX
+        maxY = startY
+    end
+    -- TODO: clip to screen rectangle?
+    local xDiff = maxX - minX
+    local yDiff = maxY - minY
+    if xDiff > math.abs(yDiff) then
+        local y = minY
+        local dy = yDiff / xDiff
+        for x=minX,maxX do
+            drawPixelInternal( x, math.floor( y + 0.5 ) )
+            y = y + dy
+        end
+    else
+        local x = minX
+        local dx = xDiff / yDiff
+        if maxY >= minY then
+            for y=minY,maxY do
+                drawPixelInternal( math.floor( x + 0.5 ), y )
+                x = x + dx
+            end
+        else
+            for y=minY,maxY,-1 do
+                drawPixelInternal( math.floor( x + 0.5 ), y )
+                x = x - dx
+            end
+        end
+    end
+end
+
 
 function drawBox(x,y,endX,endY,color)
+  for i=y > endY and endY or y,y > endY and y or endY do
+    drawLine(x,i,endX,i,color)
+  end
+end
+
+function drawNormBox(x,y,endX,endY,color)
   for i=y > endY and endY or y,y > endY and y or endY do
     paintutils.drawLine(x,i,endX,i,color)
   end
@@ -21,47 +115,104 @@ function dualPull(...)
 end
 
 function redraw()
-  term.setBackgroundColor(colors.black)
-  term.clear()
   for i,v in pairs(code) do
   	if curElement ~= i then
       if v.class == "pixel" and v.visible == true then
-        paintutils.drawPixel(v.x,v.y,v.color)
+        drawPixel(v.x,v.y,v.color)
       elseif v.class == "line" and v.visible == true then
-        paintutils.drawLine(v.sX,v.sY,v.eX,v.eY,v.color)
+        drawLine(v.sX,v.sY,v.eX,v.eY,v.color)
       elseif v.class == "text" and v.visible == true then
-        term.setCursorPos(v.x,v.y)
-        term.setTextColor(v.tColor)
-        term.setBackgroundColor(v.bColor)
-        term.write(v.text)
+        redrawWin.setCursorPos(v.x,v.y)
+        redrawWin.setTextColor(v.tColor)
+        redrawWin.setBackgroundColor(v.bColor)
+        redrawWin.write(v.text)
       elseif v.class == "fill" and v.visible == true then
-       	term.setBackgroundColor(v.color)
-       	term.clear()
+       	redrawWin.setBackgroundColor(v.color)
+       	redrawWin.clear()
       elseif v.class == "rectangle" and v.visible == true then
        	drawBox(v.x,v.y,v.endX,v.endY,v.color)
       end
-    else
+    elseif curElement == i then
       if v.class == "pixel" then
-        paintutils.drawPixel(v.x,v.y,v.color ~= colors.blue and colors.blue or colors.lightBlue)
+        drawPixel(v.x,v.y,v.color ~= colors.blue and colors.blue or colors.lightBlue)
       elseif v.class == "line" then
-        paintutils.drawLine(v.sX,v.sY,v.eX,v.eY,v.color ~= colors.blue and colors.blue or colors.lightBlue)
+        drawLine(v.sX,v.sY,v.eX,v.eY,v.color ~= colors.blue and colors.blue or colors.lightBlue)
       elseif v.class == "text" then
-        term.setCursorPos(v.x,v.y)
-        term.setTextColor(v.tColor ~= colors.blue and colors.blue or colors.lightBlue)
-        term.setBackgroundColor(v.bColor ~= colors.blue and colors.blue or colors.lightBlue)
-        term.write(v.text)
+        redrawWin.setCursorPos(v.x,v.y)
+        redrawWin.setTextColor(v.tColor ~= colors.blue and colors.blue or colors.lightBlue)
+        redrawWin.setBackgroundColor(v.bColor ~= colors.blue and colors.blue or colors.lightBlue)
+        redrawWin.write(v.text)
       elseif v.class == "fill" then
-       	term.setBackgroundColor(v.color ~= colors.blue and colors.blue or colors.lightBlue)
-       	term.clear()
+       	redrawWin.setBackgroundColor(v.color ~= colors.blue and colors.blue or colors.lightBlue)
+       	redrawWin.clear()
       elseif v.class == "rectangle" then
       	drawBox(v.sX,v.sY,v.eX,v.eY,v.color ~= colors.blue and colors.blue or colors.lightBlue)
       end
     end
   end
+  for i,v in pairs(code) do
+  	if v.class == "text" then
+      redrawWin.blit(v.x,v.y,v.x,v.y,#v.text,1)
+    elseif v.class == "rectangle" then
+      redrawWin.blit(v.sX > v.eX and v.sX or v.eX, v.sY > v.eY and v.sY or v.eY,v.sX > v.eX and v.sX or v.eX, v.sY > v.eY and v.sY or v.eY,v.sX > v.eX and v.eX - v.sX or v.sX - v.eX,v.sY > v.eY and v.eY - v.sY or v.sY - v.eY)
+    elseif v.class == "line" then
+      startX = math.floor(v.sX)
+      startY = math.floor(v.sY)
+      endX = math.floor(v.eX)
+      endY = math.floor(v.eY)
+      if nColour then
+          redrawWin.setBackgroundColor( nColour )
+      end
+      if startX == endX and startY == endY then
+          redrawWin.blit( startX, startY, startX, startY, 1, 1)
+          return
+      end
+      local minX = math.min( startX, endX )
+      if minX == startX then
+          minY = startY
+          maxX = endX
+          maxY = endY
+      else
+          minY = endY
+          maxX = startX
+          maxY = startY
+      end
+       -- TODO: clip to screen rectangle?
+      local xDiff = maxX - minX
+      local yDiff = maxY - minY
+      if xDiff > math.abs(yDiff) then
+          local y = minY
+          local dy = yDiff / xDiff
+          for x=minX,maxX do
+              redrawWin.blit( x, math.floor( y + 0.5 ), x, math.floor( y + 0.5 ), 1, 1 )
+              y = y + dy
+          end
+      else
+          local x = minX
+          local dx = xDiff / yDiff
+          if maxY >= minY then
+              for y=minY,maxY do
+                  redrawWin.blit( math.floor( x + 0.5 ), y, math.floor( x + 0.5 ), y, 1, 1 )
+                  x = x + dx
+              end
+          else
+              for y=minY,maxY,-1 do
+                  redrawWin.blit( math.floor( x + 0.5 ), y, math.floor( x + 0.5 ), y, 1, 1 )
+                  x = x - dx
+              end
+          end
+      end
+    elseif v.class == "fill" then
+      term.setBackgroundColor(v.color)
+      term.clear()
+    elseif v.class == "pixel" then
+      redrawWin.blit(v.x,v.y,v.x,v.y,1,1)
+    end
+  end
 end
 
 function line(toX,toY,fromX,fromY,color,key)
-  if not toX and not toY and not fromX and not fromY then
+  if toX == nil and toY == nil and fromX == nil and fromY == nil then
     event, button, fromX, fromY = os.pullEvent("mouse_click")
     event, button, toX, toY = os.pullEvent("mouse_click")
   end
@@ -71,10 +222,11 @@ function line(toX,toY,fromX,fromY,color,key)
   local curPoint = "to"
   while true do
   	redraw()
-  	paintutils.drawLine(fromX,fromY,toX,toY,curColor)
+  	paintutils.drawLine(fromX,fromY,toX,toY,color)
   	paintutils.drawPixel(curPoint == "to" and toX or fromX,curPoint == "to" and toY or fromY,color ~= colors.lightBlue and colors.lightBlue or colors.blue)
     local event, button, x, y = dualPull("mouse_click","mouse_drag")
     if event == "mouse_drag" then
+      paintutils.drawLine(fromX,fromY,toX,toY,colors.black)
       toX = curPoint == "to" and x or toX
       toY = curPoint == "to" and y or toY
       fromX = curPoint == "from" and x or fromX
@@ -98,6 +250,7 @@ function line(toX,toY,fromX,fromY,color,key)
     sY = fromY,
     eX = toX,
     eY = toY,
+    visible = true,
     color = curColor}
   if key then
   	table.remove(code,key)
@@ -110,7 +263,7 @@ end
 function text(x,y,sText,bColor,tColor,key)
   if not bColor and not tColor then
     tColor = colors.black
-    bColor = colors.red
+    bColor = colors.green
   end
   local tText = {}
   if sText then
@@ -121,7 +274,7 @@ function text(x,y,sText,bColor,tColor,key)
   end
   local selected = #tText
   if not x and not y then
-    local event, button, x, y = os.pullEvent("mouse_click")
+    event, button, x, y = os.pullEvent("mouse_click")
   end
   repeat
   	redraw()
@@ -142,6 +295,7 @@ function text(x,y,sText,bColor,tColor,key)
       	local oldSel = selected
       	selected = selected - 1
       	table.remove(tText,oldSel)
+      	paintutils.drawPixel(x + #tText + 1,y,colors.black)
       end
     end
   until key == keys.enter
@@ -152,6 +306,7 @@ function text(x,y,sText,bColor,tColor,key)
       x = x,
       y = y,
       tColor = tColor,
+      visible = true,
       bColor = bColor}
     if key then
   	  table.remove(code,key)
@@ -163,6 +318,7 @@ function text(x,y,sText,bColor,tColor,key)
 end
 
 function rectangle(fromX,fromY,toX,toY,color,key)
+  paintutils.drawPixel(1,1,colors.green)
   if not fromX and not fromY and not toX and not toY then
     local event, button, x, y = os.pullEvent("mouse_click")
     fromX = x
@@ -177,14 +333,16 @@ function rectangle(fromX,fromY,toX,toY,color,key)
   local curPoint = "to"
   while true do
     redraw()
-    drawBox(fromX,fromY,toX,toY,color)
+    drawNormBox(fromX,fromY,toX,toY,color)
     paintutils.drawPixel(curPoint == "to" and toX or fromX, curPoint == "to" and toY or fromY, color ~= colors.lightBlue and colors.lightBlue or colors.blue)
     local event, button, x, y = dualPull("mouse_click","mouse_drag")
     if event == "mouse_drag" then
       if curPoint == "to" then
+      	drawNormBox(fromX,fromY,toX,toY,colors.black)
         toX = x
         toY = y
       elseif curPoint == "from" then
+      	drawNormBox(fromX,fromY,toX,toY,colors.black)
       	fromX = x
       	fromY = y
       end
@@ -206,6 +364,7 @@ function rectangle(fromX,fromY,toX,toY,color,key)
     sY = fromY,
     eX = toX,
     eY = toY,
+    visible = true,
     color = color}
   if key then
   	table.remove(code,key)
@@ -228,3 +387,16 @@ function edit(key)
   end
   code[key] = item
 end
+
+function rightClickMenu(x,y)
+  if y + 5 >= 19 then
+    y = y - 5
+  end
+  if x + 8 >= 51 then
+  	x = x - 8
+  end
+end
+
+line()
+text()
+rectangle()
