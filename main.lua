@@ -107,6 +107,14 @@ function drawNormBox(x,y,endX,endY,color)
   end
 end
 
+function toColor(nColor)
+  for i,v in pairs(colors) do
+    if nColor == v then
+      return "colors."..i
+    end
+  end
+end
+
 function dualPull(...)
   local args={...}
   repeat
@@ -396,30 +404,73 @@ end
 
 function rightClickMenu(x,y)
   redraw()
-  if y + 5 > 19 then
+  if y + 5 > redrawWin.height then
     y = y - 5
   end
-  if x + 8 > 51 then
-  	x = x - (10 - 51 - x)
+  if x + 8 > redrawWin.width then
+  	x = x - (8 - (redrawWin.width-x))
   end
   drawNormBox(x,y,x+8,y+5,colors.white)
+  term.setTextColor(colors.black)
+  term.setCursorPos(x,y)
+  term.write("Line")
+  term.setCursorPos(x,y+1)
+  term.write("Text")
+  term.setCursorPos(x,y+2)
+  term.write("Box")
+  term.setCursorPos(x,y+3)
+  term.write("Pixel")
+  term.setCursorPos(x,y+4)
+  term.write("Delete")
   local clicked = false
   local clickInfo
   while true do
   	drawNormBox(x,y,x+8,y+5,colors.white)
+    term.setTextColor(colors.black)
+    term.setCursorPos(x,y)
+    term.write("Line")
+    term.setCursorPos(x,y+1)
+    term.write("Text")
+    term.setCursorPos(x,y+2)
+    term.write("Box")
+    term.setCursorPos(x,y+3)
+    term.write("Pixel")
+    term.setCursorPos(x,y+4)
+    term.write("Delete")
     local event, button, clickX, clickY = os.pullEvent("mouse_click")
-    if button == 2 then
+    if button == 2 and (clickX > x+8 or clickX < x or clickY > y+5 or clickY < y) then
       drawNormBox(x,y,x+8,y+5,colors.black)
       redraw()
       x = clickX
       y = clickY
-      if y + 5 > 19 then
+      if y + 5 > redrawWin.height then
         y = y - 5
       end
-      if x + 8 > 51 then
-   	    x = x - (8 - (51-x))
+      if x + 8 > redrawWin.width then
+   	    x = x - (8 - (redrawWin.width-x))
       end
     elseif button == 1 then
+      if clickX >= x and clickX < x + 9 and clickY == y then
+        drawNormBox(x,y,x+8,y+5,colors.black)
+        line()
+      end
+      if clickX >= x and clickX < x + 9 and clickY == y+1 then
+        drawNormBox(x,y,x+8,y+5,colors.black)
+        text()
+      end
+      if clickX >= x and clickX < x + 9 and clickY == y+2 then
+        drawNormBox(x,y,x+8,y+5,colors.black)
+        rectangle()
+      end
+      if clickX >= x and clickX < x + 9 and clickY == y+3 then
+        drawNormBox(x,y,x+8,y+5,colors.black)
+        pixel()
+      end
+      if clickX >= x and clickX < x + 9 and clickY == y+4 then
+        drawNormBox(x,y,x+8,y+5,colors.black)
+        table.remove(code)
+      end
+      
       if clickX > x+8 or clickX < x then
       	clicked = true
       	clickInfo = {event, button, clickX, clickY}
@@ -435,4 +486,39 @@ function rightClickMenu(x,y)
   if clicked == true then
     os.queueEvent(unpack(clickInfo))
   end
+end
+
+function save()
+  local file = fs.open(tArgs[1],"a")
+  local rect = false
+  file.writeLine("function drawGUI()")
+  for i,v in pairs(code) do
+    if v.class == "rectangle" then
+      if not paintutils.drawFilledBox and not rect then
+        file.writeLine([[
+function drawBox(x,y,endX,endY,color)
+  for i=y > endY and endY or y,y > endY and y or endY do
+    paintutils.drawLine(x,i,endX,i,color)
+  end   
+end]])
+        rect = true
+      end
+      file.writeLine(" ")
+      file.writeLine(rect and "  drawBox("..v.sX..","..v.sY..","..v.eX..","..v.eY..","..toColor(v.color)..")" or "  paintutils.drawFilledBox("..v.sX..","..v.sY..","..v.eX..","..v.eY..","..toColor(v.color)..")")
+    elseif v.class == "line" then
+      file.writeLine(" ")
+      file.writeLine("  paintutils.drawLine("..v.sX..","..v.sY..","..v.eX..","..v.eY..","..v.color..")")
+    elseif v.class == "text" then
+      file.writeLine(" ")
+      file.writeLine("  term.setCursorPos("..v.x..","..v.y..")")
+      file.writeLine("  term.setTextColor("..toColor(v.tColor)..")")
+      file.writeLine("  term.setBackgroundColor("..toColor(v.bColor)..")")
+      file.writeLine("  term.write("..v.text..")")
+    elseif v.class == "pixel" then
+      file.writeLine(" ")
+      file.writeLine("  paintutils.drawPixel("..x..","..y..","..color..")")
+    end
+  end
+  file.writeLine(" ")
+  file.writeLine("end")
 end
