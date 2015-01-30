@@ -1,6 +1,7 @@
 code = {}
 curElement = 999
-curColor = colors.blue
+curColor = colors.green
+
 function redirectLoad()
   local count = 0
   repeat
@@ -134,7 +135,7 @@ function redraw()
        	redrawWin.setBackgroundColor(v.color)
        	redrawWin.clear()
       elseif v.class == "rectangle" and v.visible == true then
-       	drawBox(v.x,v.y,v.endX,v.endY,v.color)
+       	drawBox(v.sX,v.sY,v.eX,v.eY,v.color)
       end
     elseif i == curElement then
       if v.class == "pixel" then
@@ -158,7 +159,9 @@ function redraw()
   	if v.class == "text" then
       redrawWin.blit(v.x,v.y,v.x,v.y,#v.text,1)
     elseif v.class == "rectangle" then
-      redrawWin.blit(v.sX > v.eX and v.sX or v.eX, v.sY > v.eY and v.sY or v.eY,v.sX > v.eX and v.sX or v.eX, v.sY > v.eY and v.sY or v.eY,v.sX > v.eX and v.eX - v.sX or v.sX - v.eX,v.sY > v.eY and v.eY - v.sY or v.sY - v.eY)
+      for i=v.sY,v.eY do
+        redrawWin.blit(v.sX,i,v.sX,i,v.eX,1)
+      end
     elseif v.class == "line" then
       startX = math.floor(v.sX)
       startY = math.floor(v.sY)
@@ -255,7 +258,7 @@ function line(toX,toY,fromX,fromY,color,key)
     eX = toX,
     eY = toY,
     visible = true,
-    color = curColor}
+    color = color}
   if key then
   	table.remove(code,key)
     table.insert(code,key,template)
@@ -299,7 +302,7 @@ function text(x,y,sText,bColor,tColor,key)
       	local oldSel = selected
       	selected = selected - 1
       	table.remove(tText,oldSel)
-      	paintutils.drawPixel(x + #tText + 1,y,colors.black)
+      	paintutils.drawPixel(x + #tText,y,colors.black)
       end
     end
   until key == keys.enter
@@ -324,12 +327,12 @@ end
 function rectangle(fromX,fromY,toX,toY,color,key)
   paintutils.drawPixel(1,1,colors.green)
   if not fromX and not fromY and not toX and not toY then
-    local event, button, x, y = os.pullEvent("mouse_click")
-    fromX = x
-    fromY = y
-    local event, button, x, y = os.pullEvent("mouse_click")
-    toX = x
-    toY = y
+    local event, button, fX, fY = os.pullEvent("mouse_click")
+    fromX = fX
+    fromY = fY
+    local event, button, tX, tY = os.pullEvent("mouse_click")
+    toX = tX
+    toY = fY
   end
   if not color then
   	color = colors.red
@@ -364,10 +367,10 @@ function rectangle(fromX,fromY,toX,toY,color,key)
   end
   local template = {
     class = "rectangle",
-    sX = fromX,
-    sY = fromY,
-    eX = toX,
-    eY = toY,
+    sX = fromX < toX and fromX or toX,
+    sY = fromY < toY and fromY or toY,
+    eX = fromX > toX and fromX or toX,
+    eY = fromY > toY and fromY or toY,
     visible = true,
     color = color}
   if key then
