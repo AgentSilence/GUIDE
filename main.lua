@@ -489,36 +489,33 @@ function rightClickMenu(x,y)
 end
 
 function save()
-  local file = fs.open(tArgs[1],"a")
+  local file = fs.open("test","a")
   local rect = false
   file.writeLine("function drawGUI()")
   for i,v in pairs(code) do
     if v.class == "rectangle" then
       if not paintutils.drawFilledBox and not rect then
         file.writeLine([[
-function drawBox(x,y,endX,endY,color)
-  for i=y > endY and endY or y,y > endY and y or endY do
-    paintutils.drawLine(x,i,endX,i,color)
-  end   
-end]])
+  local function drawBox(x,y,endX,endY,color)
+    for i=y > endY and endY or y,y > endY and y or endY do
+      paintutils.drawLine(x,i,endX,i,color)
+    end   
+  end]])
         rect = true
       end
-      file.writeLine(" ")
       file.writeLine(rect and "  drawBox("..v.sX..","..v.sY..","..v.eX..","..v.eY..","..toColor(v.color)..")" or "  paintutils.drawFilledBox("..v.sX..","..v.sY..","..v.eX..","..v.eY..","..toColor(v.color)..")")
     elseif v.class == "line" then
-      file.writeLine(" ")
-      file.writeLine("  paintutils.drawLine("..v.sX..","..v.sY..","..v.eX..","..v.eY..","..v.color..")")
+      file.writeLine("  paintutils.drawLine("..v.sX..","..v.sY..","..v.eX..","..v.eY..","..toColor(v.color)..")")
     elseif v.class == "text" then
-      file.writeLine(" ")
       file.writeLine("  term.setCursorPos("..v.x..","..v.y..")")
       file.writeLine("  term.setTextColor("..toColor(v.tColor)..")")
       file.writeLine("  term.setBackgroundColor("..toColor(v.bColor)..")")
-      file.writeLine("  term.write("..v.text..")")
+      file.writeLine([[  term.write("]]..v.text..[[")]])
     elseif v.class == "pixel" then
       file.writeLine(" ")
       file.writeLine("  paintutils.drawPixel("..x..","..y..","..color..")")
     end
   end
-  file.writeLine(" ")
   file.writeLine("end")
+  file.close()
 end
