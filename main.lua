@@ -5,6 +5,9 @@ curColor = colors.green
 function redirectLoad()
   local count = 0
   repeat
+    if createRedirectBuffer then
+      break
+    end
     local tempFile = http.get("http://pastebin.com/raw.php?i=fU9Kj9zr")
     if tempFile then
       local tempCall = loadstring(tempFile.readAll())
