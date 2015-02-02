@@ -163,67 +163,7 @@ function redraw()
       end
     end
   end
-  for i,v in pairs(code) do
-  	if v.class == "text" then
-      redrawWin.blit(v.x,v.y,v.x,v.y,#v.text,1)
-    elseif v.class == "rectangle" then
-      for i=v.sY,v.eY do
-        redrawWin.blit(v.sX,i,v.sX,i,v.eX,1)
-      end
-    elseif v.class == "line" then
-      startX = math.floor(v.sX)
-      startY = math.floor(v.sY)
-      endX = math.floor(v.eX)
-      endY = math.floor(v.eY)
-      if nColour then
-        redrawWin.setBackgroundColor( nColour )
-      end
-      if startX == endX and startY == endY then
-        redrawWin.blit( startX, startY, startX, startY, 1, 1)
-        return
-      end
-      local minX = math.min( startX, endX )
-      if minX == startX then
-        minY = startY
-        maxX = endX
-        maxY = endY
-      else
-        minY = endY
-        maxX = startX
-        maxY = startY
-      end
-       -- TODO: clip to screen rectangle?
-      local xDiff = maxX - minX
-      local yDiff = maxY - minY
-      if xDiff > math.abs(yDiff) then
-        local y = minY
-        local dy = yDiff / xDiff
-        for x=minX,maxX do
-          redrawWin.blit( x, math.floor( y + 0.5 ), x, math.floor( y + 0.5 ), 1, 1 )
-          y = y + dy
-        end
-      else
-        local x = minX
-        local dx = xDiff / yDiff
-        if maxY >= minY then
-          for y=minY,maxY do
-            redrawWin.blit( math.floor( x + 0.5 ), y, math.floor( x + 0.5 ), y, 1, 1 )
-            x = x + dx
-          end
-        else
-          for y=minY,maxY,-1 do
-            redrawWin.blit( math.floor( x + 0.5 ), y, math.floor( x + 0.5 ), y, 1, 1 )
-            x = x - dx
-          end
-        end
-      end
-    elseif v.class == "fill" then
-      term.setBackgroundColor(v.color)
-      term.clear()
-    elseif v.class == "pixel" then
-      redrawWin.blit(v.x,v.y,v.x,v.y,1,1)
-    end
-  end
+  redrawWin.blit()
 end
 
 function line(toX,toY,fromX,fromY,color,key)
@@ -469,6 +409,7 @@ function rightClickMenu(x,y)
       if clickX >= x and clickX < x + 9 and clickY == y+4 then
         drawNormBox(x,y,x+8,y+5,colors.black)
         table.remove(code)
+        redraw()
       end
       
       if clickX > x+8 or clickX < x then
